@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1C2836">
+<title>Weekend Screen Time</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Noto+Sans+Arabic:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #EAF0F5; --surface: #FFFFFF; --ink: #1C2836; --muted: #5F6E7E;
+    --line: #D3DCE5; --lost: #D9DFE6; --lost-mark: #C2453C;
+    --k1: #2A7F6F; --k2: #C08A1E; --k3: #6A4C9C;
+    --scrim: rgba(18, 26, 35, 0.55);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121A23; --surface: #1B2531; --ink: #E7EDF3; --muted: #97A5B4;
+      --line: #2C3846; --lost: #2A3542; --lost-mark: #E86A5F;
+      --k1: #4DB59F; --k2: #E0AE45; --k3: #9C7FD0;
+      --scrim: rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121A23; --surface: #1B2531; --ink: #E7EDF3; --muted: #97A5B4;
+    --line: #2C3846; --lost: #2A3542; --lost-mark: #E86A5F;
+    --k1: #4DB59F; --k2: #E0AE45; --k3: #9C7FD0;
+    --scrim: rgba(0, 0, 0, 0.6);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Bricolage Grotesque", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.4;
+  }
+  html[lang="ar"] body { font-family: "Noto Sans Arabic", "Bricolage Grotesque", system-ui, sans-serif; line-height: 1.6; }
+  main { max-width: 760px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+  [hidden] { display: none !important; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .langs button { border-radius: 0; padding: 0.45rem 0.8rem; background: transparent; color: var(--muted); font-weight: 600; }
+  .langs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .navlink {
+    color: var(--ink); text-decoration: none; font-weight: 600; border: 1px solid var(--line);
+    background: var(--surface); border-radius: 10px; padding: 0.45rem 0.9rem;
+  }
+  .navlink:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  header { margin-bottom: 1.5rem; }
+  h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+  html[lang="ar"] h1 { letter-spacing: 0; }
+  .sub { color: var(--muted); margin: 0.35rem 0 0; }
+
+  .kid {
+    background: var(--surface); border-inline-start: 6px solid var(--c);
+    border-radius: 14px; padding: 1.1rem 1.1rem 1.2rem; margin-bottom: 1rem;
+  }
+  .kid-top { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .name { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--c); }
+  .left { font-size: 1.05rem; color: var(--muted); }
+  .left strong { color: var(--ink); font-size: 1.35rem; font-weight: 800; }
+
+  .days { display: grid; gap: 0.6rem; margin: 0.9rem 0 1rem; }
+  .day { display: grid; grid-template-columns: 3.4rem 1fr 4.6rem; align-items: center; gap: 0.6rem; }
+  .day-name { font-weight: 600; color: var(--muted); }
+  .day-time { text-align: end; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .blocks { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+  .b { height: 22px; border-radius: 4px; background: var(--c); position: relative; }
+  .b.lost { background: var(--lost); }
+  .b.lost::after {
+    content: ""; position: absolute; left: 18%; right: 18%; top: 50%;
+    height: 2px; background: var(--lost-mark); transform: rotate(-35deg);
+  }
+  .b.fresh { animation: pop 0.35s ease-out; }
+  @keyframes pop { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+  .actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 0; padding: 0.7rem 1.1rem; font-weight: 600; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .add { background: var(--c); color: #fff; font-size: 1.05rem; flex: 1 1 auto; min-width: 11rem; }
+  .undo, .ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .add:disabled, .undo:disabled { opacity: 0.4; cursor: not-allowed; }
+  .count { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-start: auto; }
+
+  footer { margin-top: 1.5rem; color: var(--muted); font-size: 0.92rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .danger.armed { background: var(--lost-mark); color: #fff; border-color: var(--lost-mark); }
+  .primary { background: var(--ink); color: var(--bg); }
+
+  /* Admin */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.9rem 0; }
+  .stat { border: 1px solid var(--line); border-radius: 10px; padding: 0.55rem 0.7rem; }
+  .stat b { display: block; font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 0.85rem; }
+  h3 { font-size: 1rem; margin: 1rem 0 0.4rem; color: var(--muted); font-weight: 600; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .log { list-style: none; margin: 0; padding: 0; max-height: 15rem; overflow-y: auto; border-top: 1px solid var(--line); }
+  .log li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .log .when { color: var(--ink); }
+  .log .what { color: var(--muted); white-space: nowrap; }
+  .log li.undone .when { text-decoration: line-through; color: var(--muted); }
+  .empty { color: var(--muted); margin: 0.4rem 0 0; }
+  .settings { background: var(--surface); border-radius: 14px; padding: 1.1rem; }
+  .settings h2 { margin: 0 0 0.8rem; font-size: 1.3rem; }
+  .settings .row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .note { color: var(--muted); font-size: 0.9rem; margin: 0.6rem 0 0; min-height: 1.3em; }
+
+  /* Password sheet */
+  .modal { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 1rem; z-index: 20; }
+  .sheet { background: var(--surface); border-radius: 16px; padding: 1.3rem; width: min(400px, 100%); }
+  .sheet h2 { margin: 0 0 0.3rem; font-size: 1.3rem; }
+  .sheet p { margin: 0 0 0.8rem; color: var(--muted); }
+  .sheet input {
+    width: 100%; font: inherit; padding: 0.7rem 0.8rem; margin-bottom: 0.6rem;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink);
+  }
+  .sheet input:focus-visible { outline: 3px solid var(--ink); outline-offset: 1px; }
+  .sheet .err { color: var(--lost-mark); min-height: 1.3em; margin: 0 0 0.6rem; }
+  .sheet .row { display: flex; gap: 0.6rem; justify-content: flex-end; }
+
+  @media (max-width: 480px) {
+    .blocks { gap: 2px; }
+    .b { height: 18px; }
+    .day { grid-template-columns: 3rem 1fr 4.2rem; gap: 0.4rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .b.fresh { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <div class="langs" role="group" aria-label="Language">
+      <button data-lang="en">English</button>
+      <button data-lang="ar" lang="ar">العربية</button>
+      <button data-lang="fr" lang="fr">Français</button>
+    </div>
+    <a class="navlink" id="nav" href="#admin"></a>
+  </div>
+
+  <section id="view-main">
+    <header>
+      <h1 id="title"></h1>
+      <p class="sub" id="sub"></p>
+    </header>
+    <div id="kids"></div>
+    <footer>
+      <span id="week"></span>
+      <button class="ghost" id="install" hidden></button>
+    </footer>
+  </section>
+
+  <section id="view-admin" hidden>
+    <header>
+      <h1 id="a-title"></h1>
+      <p class="sub" id="a-sub"></p>
+    </header>
+    <div id="a-kids"></div>
+    <div class="settings">
+      <h2 id="s-title"></h2>
+      <div class="row">
+        <button class="ghost" id="change-pwd"></button>
+        <button class="ghost danger" id="reset"></button>
+        <button class="primary" id="lock"></button>
+      </div>
+      <p class="note" id="s-note" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <form class="sheet" id="m-form" autocomplete="off">
+    <h2 id="m-title"></h2>
+    <p id="m-hint"></p>
+    <input type="password" id="m-p1">
+    <input type="password" id="m-p2">
+    <p class="err" id="m-err" aria-live="polite"></p>
+    <div class="row">
+      <button type="button" class="ghost" id="m-cancel"></button>
+      <button type="submit" class="primary" id="m-ok"></button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // ---------- Config ----------
+  // Internal ids stay stable so saved data survives name/label changes.
+  const KIDS = [
+    { id: "hamza",   color: "var(--k1)", names: { en: "Hamza",   ar: "حمزة",  fr: "Hamza" } },
+    { id: "hazem",   color: "var(--k2)", names: { en: "Hazem",   ar: "حازم",  fr: "Hazem" } },
+    { id: "elhasan", color: "var(--k3)", names: { en: "Alhasan", ar: "الحسن", fr: "Alhasan" } }
+  ];
+  const BLOCK = 15, PER_DAY = 240;
+  const BLOCKS_PER_DAY = PER_DAY / BLOCK;   // 16
+  const MAX = BLOCKS_PER_DAY * 2;           // 32
+  const HISTORY_WEEKS = 8;
+  const KEY = "screen-time-tracker-v2";
+  const OLD_KEY = "screen-time-tracker-v1";
+  const LANG_KEY = "screen-time-tracker-lang";
+
+  const T = {
+    en: {
+      dir: "ltr", locale: "en",
+      title: "Weekend screen time",
+      sub: "Each broken rule takes 15 minutes, alternating between Saturday and Sunday.",
+      sat: "Sat", sun: "Sun", satLong: "Saturday", sunLong: "Sunday",
+      h: "h", m: "m",
+      left: t => `<strong>${t}</strong> left of 8h`,
+      add: "Broke a rule (−15 min)", undo: "Undo",
+      count: n => `${n} this week`,
+      week: d => `Week of ${d}. Resets Monday.`,
+      admin: "Admin", back: "Back",
+      aTitle: "Admin", aSub: "History and progress for each child.",
+      thisWeek: "this week", total: "last 8 weeks", avg: "weekly average",
+      trend: "Penalties per week", log: "Violation log", noLog: "No violations yet.",
+      undone: "Undone", from: d => `−15 min, ${d}`,
+      settings: "Settings", changePwd: "Change password", pwdChanged: "Password changed.",
+      reset: "Reset this week", resetConfirm: "Tap again to reset", resetDone: "This week was reset.",
+      lock: "Lock",
+      createTitle: "Create an admin password", createHint: "You’ll need it to undo penalties and open the admin page.",
+      newTitle: "New admin password", newHint: "Enter the new password twice.",
+      enterTitle: "Admin password", enterHint: "Enter the password to open the admin page.",
+      undoTitle: "Undo a penalty", undoHint: n => `Enter the admin password to give ${n} back 15 minutes.`,
+      pwd: "Password", pwd2: "Repeat password",
+      ok: "Confirm", cancel: "Cancel",
+      wrong: "Wrong password. Try again.", mismatch: "The passwords don’t match.", tooShort: "Use at least 4 characters.",
+      install: "Install app", dayLeft: (d, t) => `${d}: ${t} left`
+    },
+    ar: {
+      dir: "rtl", locale: "ar",
+      title: "وقت الأجهزة في عطلة نهاية الأسبوع",
+      sub: "كل مخالفة لقواعد البيت تخصم ١٥ دقيقة، بالتناوب بين السبت والأحد.",
+      sat: "السبت", sun: "الأحد", satLong: "السبت", sunLong: "الأحد",
+      h: "س", m: "د",
+      left: t => `متبقٍ <strong>${t}</strong> من ٨ ساعات`,
+      add: "خالف قاعدة (−١٥ دقيقة)", undo: "تراجع",
+      count: n => `المخالفات هذا الأسبوع: ${n}`,
+      week: d => `أسبوع ${d}. يُعاد الضبط يوم الاثنين.`,
+      admin: "الإدارة", back: "رجوع",
+      aTitle: "لوحة الإدارة", aSub: "السجل والأداء لكل طفل.",
+      thisWeek: "هذا الأسبوع", total: "آخر ٨ أسابيع", avg: "المتوسط الأسبوعي",
+      trend: "المخالفات أسبوعياً", log: "سجل المخالفات", noLog: "لا توجد مخالفات بعد.",
+      undone: "تم التراجع", from: d => `−١٥ دقيقة، ${d}`,
+      settings: "الإعدادات", changePwd: "تغيير كلمة المرور", pwdChanged: "تم تغيير كلمة المرور.",
+      reset: "إعادة ضبط الأسبوع", resetConfirm: "اضغط مرة أخرى للتأكيد", resetDone: "تمت إعادة ضبط هذا الأسبوع.",
+      lock: "قفل",
+      createTitle: "إنشاء كلمة مرور للإدارة", createHint: "ستحتاجها للتراجع عن العقوبات وفتح صفحة الإدارة.",
+      newTitle: "كلمة مرور جديدة", newHint: "أدخل كلمة المرور الجديدة مرتين.",
+      enterTitle: "كلمة مرور الإدارة", enterHint: "أدخل كلمة المرور لفتح صفحة الإدارة.",
+      undoTitle: "التراجع عن عقوبة", undoHint: n => `أدخل كلمة مرور الإدارة لإرجاع ١٥ دقيقة إلى ${n}.`,
+      pwd: "كلمة المرور", pwd2: "أعد كتابة كلمة المرور",
+      ok: "تأكيد", cancel: "إلغاء",
+      wrong: "كلمة المرور غير صحيحة. حاول مرة أخرى.", mismatch: "كلمتا المرور غير متطابقتين.", tooShort: "استخدم ٤ أحرف على الأقل.",
+      install: "تثبيت التطبيق", dayLeft: (d, t) => `${d}: متبقٍ ${t}`
+    },
+    fr: {
+      dir: "ltr", locale: "fr",
+      title: "Écrans du week-end",
+      sub: "Chaque règle enfreinte retire 15 minutes, en alternant entre samedi et dimanche.",
+      sat: "Sam", sun: "Dim", satLong: "samedi", sunLong: "dimanche",
+      h: "h", m: "min",
+      left: t => `<strong>${t}</strong> restantes sur 8 h`,
+      add: "Règle enfreinte (−15 min)", undo: "Annuler",
+      count: n => `${n} cette semaine`,
+      week: d => `Semaine du ${d}. Remise à zéro le lundi.`,
+      admin: "Admin", back: "Retour",
+      aTitle: "Administration", aSub: "Historique et suivi de chaque enfant.",
+      thisWeek: "cette semaine", total: "8 dernières semaines", avg: "moyenne par semaine",
+      trend: "Pénalités par semaine", log: "Historique des pénalités", noLog: "Aucune pénalité pour l’instant.",
+      undone: "Annulée", from: d => `−15 min, ${d}`,
+      settings: "Réglages", changePwd: "Changer le mot de passe", pwdChanged: "Mot de passe modifié.",
+      reset: "Réinitialiser la semaine", resetConfirm: "Touchez à nouveau pour confirmer", resetDone: "La semaine a été réinitialisée.",
+      lock: "Verrouiller",
+      createTitle: "Créer un mot de passe admin", createHint: "Il sera demandé pour annuler une pénalité et ouvrir la page admin.",
+      newTitle: "Nouveau mot de passe admin", newHint: "Saisissez le nouveau mot de passe deux fois.",
+      enterTitle: "Mot de passe admin", enterHint: "Saisissez le mot de passe pour ouvrir la page admin.",
+      undoTitle: "Annuler une pénalité", undoHint: n => `Saisissez le mot de passe admin pour rendre 15 minutes à ${n}.`,
+      pwd: "Mot de passe", pwd2: "Répétez le mot de passe",
+      ok: "Valider", cancel: "Fermer",
+      wrong: "Mot de passe incorrect. Réessayez.", mismatch: "Les mots de passe ne correspondent pas.", tooShort: "Au moins 4 caractères.",
+      install: "Installer l’app", dayLeft: (d, t) => `${d} : ${t} restantes`
+    }
+  };
+
+  // ---------- Dates ----------
+  function mondayOf(d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x;
+  }
+  const keyOf = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+  const weekKey = (d = new Date()) => keyOf(mondayOf(d));
+  const dateOfKey = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+  function lastWeeks(n) {
+    const out = [], start = mondayOf(new Date());
+    for (let i = n - 1; i >= 0; i--) { const x = new Date(start); x.setDate(x.getDate() - 7 * i); out.push(keyOf(x)); }
+    return out;
+  }
+
+  // ---------- Storage ----------
+  // db.violations: [{ id, kid, ts, week, undone?, undoneTs? }]; db.pwd: { salt, hash } | null
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.violations)) return s;
+    } catch (e) {}
+    const db = { violations: [], pwd: null };
+    try { // carry over this week's counts from the earlier version
+      const old = JSON.parse(localStorage.getItem(OLD_KEY));
+      if (old && old.week === weekKey() && old.counts) {
+        const now = Date.now();
+        KIDS.forEach(k => {
+          for (let i = 0; i < (old.counts[k.id] || 0); i++)
+            db.violations.push({ id: `${now}-${k.id}-${i}`, kid: k.id, ts: now, week: old.week });
+        });
+      }
+    } catch (e) {}
+    return db;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
+
+  let db = load(); save();
+  let lang = (() => {
+    try { const l = localStorage.getItem(LANG_KEY); if (T[l]) return l; } catch (e) {}
+    const nav = (navigator.language || "en").slice(0, 2);
+    return T[nav] ? nav : "en";
+  })();
+  let currentWeek = weekKey();
+  let adminUnlocked = false;
+  let freshKid = null;
+
+  const active = (kid, week) => db.violations.filter(v => v.kid === kid && v.week === week && !v.undone).sort((a, b) => a.ts - b.ts);
+
+  // ---------- Password hashing ----------
+  async function hash(pw, salt) {
+    const data = new TextEncoder().encode(salt + ":" + pw);
+    if (window.crypto && crypto.subtle) {
+      const buf = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    let h = 2166136261; // fallback when the page is not on HTTPS
+    for (const b of data) { h ^= b; h = Math.imul(h, 16777619) >>> 0; }
+    return "f" + h.toString(16);
+  }
+  const newSalt = () => Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, "0")).join("");
+
+  // ---------- Password sheet ----------
+  const $ = id => document.getElementById(id);
+  let modalResolve = null, modalMode = null;
+  function askPassword(mode, title, hint) {
+    const t = T[lang];
+    modalMode = mode; // "verify" | "create"
+    $("m-title").textContent = title;
+    $("m-hint").textContent = hint;
+    $("m-p1").value = ""; $("m-p2").value = "";
+    $("m-p1").placeholder = t.pwd; $("m-p2").placeholder = t.pwd2;
+    $("m-p1").setAttribute("aria-label", t.pwd); $("m-p2").setAttribute("aria-label", t.pwd2);
+    $("m-p1").autocomplete = mode === "create" ? "new-password" : "current-password";
+    $("m-p2").hidden = mode !== "create";
+    $("m-err").textContent = "";
+    $("m-ok").textContent = t.ok; $("m-cancel").textContent = t.cancel;
+    $("modal").hidden = false;
+    setTimeout(() => $("m-p1").focus(), 30);
+    return new Promise(res => { modalResolve = res; });
+  }
+  function closeModal(result) {
+    $("modal").hidden = true;
+    if (modalResolve) { const r = modalResolve; modalResolve = null; r(result); }
+  }
+  $("m-cancel").addEventListener("click", () => closeModal(false));
+  $("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("modal").hidden) closeModal(false); });
+  $("m-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const t = T[lang], p1 = $("m-p1").value, p2 = $("m-p2").value;
+    if (modalMode === "create") {
+      if (p1.length < 4) { $("m-err").textContent = t.tooShort; return; }
+      if (p1 !== p2) { $("m-err").textContent = t.mismatch; return; }
+      const salt = newSalt();
+      db.pwd = { salt, hash: await hash(p1, salt) };
+      save(); closeModal(true);
+    } else {
+      if (db.pwd && (await hash(p1, db.pwd.salt)) === db.pwd.hash) closeModal(true);
+      else { $("m-err").textContent = t.wrong; $("m-p1").select(); }
+    }
+  });
+  // Ask for the password, or create one first if none exists yet.
+  function requireAdmin(title, hint) {
+    const t = T[lang];
+    if (!db.pwd) return askPassword("create", t.createTitle, t.createHint);
+    return askPassword("verify", title, hint);
+  }
+
+  // ---------- Formatting ----------
+  const num = (n, opts) => new Intl.NumberFormat(T[lang].locale, opts).format(n);
+  function fmt(m) {
+    const t = T[lang], h = Math.floor(m / 60), r = m % 60;
+    if (h && r) return `${num(h)} ${t.h} ${num(r)} ${t.m}`;
+    if (h) return `${num(h)} ${t.h}`;
+    return `${num(r)} ${t.m}`;
+  }
+
+  // ---------- Main view ----------
+  function renderMain() {
+    const t = T[lang], wrap = $("kids");
+    wrap.innerHTML = "";
+    KIDS.forEach(k => {
+      const n = active(k.id, currentWeek).length;
+      const lostSat = Math.ceil(n / 2), lostSun = Math.floor(n / 2); // alternate Sat, Sun, Sat…
+      const satLeft = PER_DAY - lostSat * BLOCK, sunLeft = PER_DAY - lostSun * BLOCK;
+      const freshDay = freshKid === k.id ? (n % 2 === 1 ? "sat" : "sun") : null;
+      const row = (key, lost, left) => {
+        let blocks = "";
+        for (let i = 0; i < BLOCKS_PER_DAY; i++) {
+          const isLost = i >= BLOCKS_PER_DAY - lost;
+          const isFresh = freshDay === key && i === BLOCKS_PER_DAY - lost;
+          blocks += `<span class="b${isLost ? " lost" : ""}${isFresh ? " fresh" : ""}"></span>`;
+        }
+        return `<div class="day"><span class="day-name">${t[key]}</span>
+          <div class="blocks" role="img" aria-label="${t.dayLeft(t[key], fmt(left))}">${blocks}</div>
+          <span class="day-time">${fmt(left)}</span></div>`;
+      };
+      const el = document.createElement("article");
+      el.className = "kid";
+      el.style.setProperty("--c", k.color);
+      el.innerHTML = `
+        <div class="kid-top"><h2 class="name">${k.names[lang]}</h2>
+          <span class="left">${t.left(fmt(satLeft + sunLeft))}</span></div>
+        <div class="days">${row("sat", lostSat, satLeft)}${row("sun", lostSun, sunLeft)}</div>
+        <div class="actions">
+          <button class="add" data-id="${k.id}" ${n >= MAX ? "disabled" : ""}>${t.add}</button>
+          <button class="undo" data-id="${k.id}" ${n <= 0 ? "disabled" : ""}>${t.undo}</button>
+          <span class="count">${t.count(num(n))}</span>
+        </div>`;
+      wrap.appendChild(el);
+    });
+    $("week").textContent = t.week(dateOfKey(currentWeek).toLocaleDateString(t.locale, { day: "numeric", month: "long" }));
+    freshKid = null;
+  }
+
+  $("kids").addEventListener("click", async e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    checkWeek();
+    const id = b.dataset.id, list = active(id, currentWeek);
+    if (b.classList.contains("add") && list.length < MAX) {
+      db.violations.push({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 7), kid: id, ts: Date.now(), week: currentWeek });
+      freshKid = id; save(); render();
+    } else if (b.classList.contains("undo") && list.length > 0) {
+      const kid = KIDS.find(k => k.id === id);
+      const ok = await requireAdmin(T[lang].undoTitle, T[lang].undoHint(kid.names[lang]));
+      if (!ok) return;
+      const latest = active(id, currentWeek).pop();
+      if (latest) { latest.undone = true; latest.undoneTs = Date.now(); save(); }
+      render();
+    }
+  });
+
+  // ---------- Admin view ----------
+  function chartSVG(kid, weeks) {
+    const t = T[lang], rtl = t.dir === "rtl";
+    const counts = weeks.map(w => active(kid.id, w).length);
+    const W = 340, H = 140, padB = 22, padT = 16, n = weeks.length;
+    const maxV = Math.max(4, ...counts);
+    const slot = W / n, bw = slot * 0.6;
+    let g = "";
+    g += `<line x1="0" y1="${H - padB}" x2="${W}" y2="${H - padB}" stroke="var(--line)" stroke-width="1"/>`;
+    weeks.forEach((w, i) => {
+      const idx = rtl ? n - 1 - i : i;
+      const x = idx * slot + (slot - bw) / 2;
+      const h = (counts[i] / maxV) * (H - padB - padT);
+      const y = H - padB - h;
+      const isNow = w === currentWeek;
+      if (counts[i] > 0) g += `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="3" fill="${kid.color}" opacity="${isNow ? 1 : 0.7}"/>`;
+      g += `<text x="${x + bw / 2}" y="${y - 4}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${num(counts[i])}</text>`;
+      const lbl = dateOfKey(w).toLocaleDateString(t.locale, { day: "numeric", month: "numeric" });
+      g += `<text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--muted)" ${isNow ? 'font-weight="700"' : ""}>${lbl}</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${t.trend}" style="font-family:inherit">${g}</svg>`;
+  }
+
+  function renderAdmin() {
+    const t = T[lang], wrap = $("a-kids"), weeks = lastWeeks(HISTORY_WEEKS);
+    $("a-title").textContent = t.aTitle;
+    $("a-sub").textContent = t.aSub;
+    $("s-title").textContent = t.settings;
+    $("change-pwd").textContent = t.changePwd;
+    $("lock").textContent = t.lock;
+    if (!$("reset").classList.contains("armed")) $("reset").textContent = t.reset;
+    wrap.innerHTML = "";
+    KIDS.forEach(k => {
+      const nowCount = active(k.id, currentWeek).length;
+      const total = weeks.reduce((s, w) => s + active(k.id, w).length, 0);
+      const avg = total / weeks.length;
+
+      // Log: newest first; Sat/Sun follows the order within each week.
+      const dayOf = {};
+      const byWeek = {};
+      db.violations.filter(v => v.kid === k.id && !v.undone).sort((a, b) => a.ts - b.ts)
+        .forEach(v => { byWeek[v.week] = (byWeek[v.week] || 0) + 1; dayOf[v.id] = byWeek[v.week] % 2 === 1 ? t.satLong : t.sunLong; });
+      const entries = db.violations.filter(v => v.kid === k.id).sort((a, b) => b.ts - a.ts).slice(0, 60);
+      const log = entries.length
+        ? `<ul class="log">${entries.map(v => {
+            const when = new Date(v.ts).toLocaleString(t.locale, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+            return `<li class="${v.undone ? "undone" : ""}"><span class="when">${when}</span><span class="what">${v.undone ? t.undone : t.from(dayOf[v.id])}</span></li>`;
+          }).join("")}</ul>`
+        : `<p class="empty">${t.noLog}</p>`;
+
+      const el = document.createElement("article");
+      el.className = "kid";
+      el.style.setProperty("--c", k.color);
+      el.innerHTML = `
+        <div class="kid-top"><h2 class="name">${k.names[lang]}</h2></div>
+        <div class="stats">
+          <div class="stat"><b>${num(nowCount)}</b><span>${t.thisWeek}</span></div>
+          <div class="stat"><b>${num(total)}</b><span>${t.total}</span></div>
+          <div class="stat"><b>${num(avg, { maximumFractionDigits: 1 })}</b><span>${t.avg}</span></div>
+        </div>
+        <h3>${t.trend}</h3>
+        <div class="chart">${chartSVG(k, weeks)}</div>
+        <h3>${t.log}</h3>
+        ${log}`;
+      wrap.appendChild(el);
+    });
+  }
+
+  $("change-pwd").addEventListener("click", async () => {
+    const t = T[lang];
+    const ok = await askPassword("create", t.newTitle, t.newHint);
+    $("s-note").textContent = ok ? t.pwdChanged : "";
+  });
+  $("lock").addEventListener("click", () => { adminUnlocked = false; location.hash = ""; });
+
+  let resetTimer = null;
+  function disarmReset() { clearTimeout(resetTimer); $("reset").classList.remove("armed"); $("reset").textContent = T[lang].reset; }
+  $("reset").addEventListener("click", () => {
+    const t = T[lang], btn = $("reset");
+    if (btn.classList.contains("armed")) {
+      disarmReset();
+      const now = Date.now();
+      db.violations.forEach(v => { if (v.week === currentWeek && !v.undone) { v.undone = true; v.undoneTs = now; } });
+      save(); render();
+      $("s-note").textContent = t.resetDone;
+    } else {
+      btn.classList.add("armed");
+      btn.textContent = t.resetConfirm;
+      resetTimer = setTimeout(disarmReset, 4000);
+    }
+  });
+
+  // ---------- Routing, language, render ----------
+  const isAdminRoute = () => location.hash === "#admin";
+  async function route() {
+    $("modal").hidden || closeModal(false);
+    if (isAdminRoute()) {
+      if (!adminUnlocked) {
+        const t = T[lang];
+        const ok = await requireAdmin(t.enterTitle, t.enterHint);
+        if (!ok) { location.hash = ""; return; }
+        adminUnlocked = true;
+      }
+    } else {
+      adminUnlocked = false;
+      $("s-note").textContent = "";
+    }
+    render();
+  }
+  function render() {
+    const t = T[lang], admin = isAdminRoute() && adminUnlocked;
+    $("view-main").hidden = admin;
+    $("view-admin").hidden = !admin;
+    $("nav").textContent = admin ? t.back : t.admin;
+    $("nav").href = admin ? "#" : "#admin";
+    if (admin) renderAdmin(); else renderMain();
+  }
+  function applyLang() {
+    const t = T[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dir = t.dir;
+    document.title = t.title;
+    $("title").textContent = t.title;
+    $("sub").textContent = t.sub;
+    $("install").textContent = t.install;
+    document.querySelectorAll(".langs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang ? "true" : "false"));
+    disarmReset();
+    render();
+  }
+  document.querySelector(".langs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-lang]");
+    if (!b) return;
+    lang = b.dataset.lang;
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    applyLang();
+  });
+
+  function checkWeek() { const w = weekKey(); if (w !== currentWeek) { currentWeek = w; render(); } }
+  setInterval(checkWeek, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkWeek(); });
+  window.addEventListener("hashchange", route);
+
+  // ---------- Install (Android) ----------
+  let installEvent = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvent = e; $("install").hidden = false; });
+  $("install").addEventListener("click", async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    await installEvent.userChoice;
+    installEvent = null; $("install").hidden = true;
+  });
+  window.addEventListener("appinstalled", () => { $("install").hidden = true; });
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  applyLang();
+  if (isAdminRoute()) route();
+</script>
+</body>
+</html>
